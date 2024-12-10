@@ -15,4 +15,5 @@ export type RootStackParamList = {
     username: string;
     avatar?: string;
   };
+  UnderDuressSettings: undefined;
 }; 

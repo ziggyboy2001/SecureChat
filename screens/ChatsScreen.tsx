@@ -1,48 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import {
   View,
-  StyleSheet,
   FlatList,
-  TouchableOpacity,
+  StyleSheet,
   RefreshControl,
 } from 'react-native';
-import { ListItem, Avatar, Text, SearchBar } from '@rneui/themed';
+import { ListItem, Avatar, Text } from '@rneui/themed';
 import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
-import { colors, spacing, borderRadius, typography, shadows, layout } from '../theme';
+import { colors, spacing } from '../theme';
+import { format } from 'date-fns';
+
+type ChatsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface Chat {
   id: string;
   user: {
     id: string;
     username: string;
-    avatar: string;
+    avatar?: string;
   };
-  lastMessage: {
+  lastMessage?: {
     content: string;
-    createdAt: string;
-    type: 'text' | 'image';
+    timestamp: string;
   };
   unreadCount: number;
 }
 
-type ChatsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
 export default function ChatsScreen() {
   const [chats, setChats] = useState<Chat[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const { user, token } = useAuth();
   const navigation = useNavigation<ChatsScreenNavigationProp>();
 
   const fetchChats = async () => {
-    if (!token) return;
-
     try {
-      setLoading(true);
       const response = await fetch(`${API_URL}/messages/chats`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -54,83 +49,89 @@ export default function ChatsScreen() {
       }
 
       const data = await response.json();
-      console.log('Fetched chats:', data);
-      setChats(data);
+      
+      // If user is under duress, only show fake conversations
+      if (user?.isUnderDuressAccount) {
+        setChats(data.filter((chat: Chat) => chat.user.id.startsWith('fake_')));
+      } else {
+        setChats(data.filter((chat: Chat) => !chat.user.id.startsWith('fake_')));
+      }
     } catch (error) {
       console.error('Error fetching chats:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchChats();
-  }, [token]);
+  }, [user]);
 
-  const filteredChats = chats.filter(chat =>
-    chat.user.username.toLowerCase().includes(search.toLowerCase())
-  );
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchChats();
+    setRefreshing(false);
+  };
+
+  const formatTimestamp = (timestamp: string) => {
+    try {
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) {
+        return '';
+      }
+      return format(date, 'MMM d, h:mm a');
+    } catch {
+      return '';
+    }
+  };
 
   const renderItem = ({ item }: { item: Chat }) => (
     <ListItem
-      onPress={() =>
-        navigation.navigate('Chat', {
-          userId: item.user.id,
-          username: item.user.username,
-        })
-      }
+      onPress={() => navigation.navigate('Chat', {
+        userId: item.user.id,
+        username: item.user.username,
+        avatar: item.user.avatar,
+      })}
+      bottomDivider
       containerStyle={styles.chatItem}
     >
       <Avatar
         rounded
-        source={
-          item.user.avatar
-            ? { uri: item.user.avatar }
-            : require('../assets/images/default-avatar.png')
-        }
-        size="medium"
+        source={item.user.avatar ? { uri: item.user.avatar } : require('../assets/images/default-avatar.png')}
+        containerStyle={styles.avatar}
       />
       <ListItem.Content>
-        <ListItem.Title style={styles.username}>
-          {item.user.username}
-        </ListItem.Title>
-        <ListItem.Subtitle numberOfLines={1} style={styles.lastMessage}>
-          {item.lastMessage.type === 'image' ? '🖼️ Image' : item.lastMessage.content}
-        </ListItem.Subtitle>
-      </ListItem.Content>
-      <View>
-        <Text style={styles.time}>
-          {new Date(item.lastMessage.createdAt).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        </Text>
-        {item.unreadCount > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{item.unreadCount}</Text>
-          </View>
+        <ListItem.Title style={styles.username}>{item.user.username}</ListItem.Title>
+        {item.lastMessage && (
+          <>
+            <ListItem.Subtitle style={styles.lastMessage}>
+              {item.lastMessage.content}
+            </ListItem.Subtitle>
+            <Text style={styles.timestamp}>
+              {formatTimestamp(item.lastMessage.timestamp)}
+            </Text>
+          </>
         )}
-      </View>
+      </ListItem.Content>
+      {item.unreadCount > 0 && (
+        <View style={styles.unreadBadge}>
+          <Text style={styles.unreadCount}>{item.unreadCount}</Text>
+        </View>
+      )}
     </ListItem>
   );
 
   return (
     <View style={styles.container}>
-      <SearchBar
-        placeholder="Search chats..."
-        onChangeText={setSearch}
-        value={search}
-        containerStyle={styles.searchContainer}
-        inputContainerStyle={styles.searchInputContainer}
-        lightTheme
-        round
-      />
       <FlatList
-        data={filteredChats}
+        data={chats}
         renderItem={renderItem}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={fetchChats} colors={[colors.primary]}/>
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>No chats yet</Text>
+          </View>
         }
         contentContainerStyle={styles.listContainer}
       />
@@ -143,59 +144,68 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  searchContainer: {
-    backgroundColor: 'transparent',
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  searchInputContainer: {
-    backgroundColor: colors.input.background,
-  },
   listContainer: {
-    paddingBottom: 15,
+    padding: spacing.md,
   },
   chatItem: {
-    marginHorizontal: 15,
-    marginVertical: 5,
-    borderRadius: borderRadius.sm,
     backgroundColor: colors.background.secondary,
+    marginBottom: spacing.sm,
+    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
       height: 2,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 3,
+    elevation: 3,
+    borderBottomWidth: 0,
   },
   username: {
-    fontWeight: 'bold',
     fontSize: 16,
+    fontWeight: '600',
     color: colors.text.primary,
+    marginBottom: 4,
   },
   lastMessage: {
-    color: colors.text.subtitle,
-    marginTop: spacing.xs,
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginRight: 40,
   },
-  time: {
+  timestamp: {
+    position: 'absolute',
+    right: 0,
+    top: 2,
     fontSize: 12,
     color: colors.text.subtitle,
-    marginBottom: spacing.sm,
   },
-  badge: {
+  unreadBadge: {
     backgroundColor: colors.button.primary,
-    borderRadius: borderRadius.circle,
-    minWidth: 20,
-    height: 20,
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 8,
+    marginLeft: spacing.sm,
   },
-  badgeText: {
+  unreadCount: {
     color: colors.text.inverse,
     fontSize: 12,
-    fontWeight: 'bold',
-    paddingHorizontal: 6,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: spacing.xl * 2,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  avatar: {
+    marginRight: spacing.sm,
   },
 }); 

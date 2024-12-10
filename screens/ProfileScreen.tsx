@@ -11,10 +11,16 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
 import { colors, spacing, borderRadius, typography, shadows, layout } from '../theme';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types/navigation';
+
+type ProfileScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function ProfileScreen() {
   const { user, token, logout } = useAuth();
   const [loading, setLoading] = useState(false);
+  const navigation = useNavigation<ProfileScreenNavigationProp>();
 
   const handleAvatarChange = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -102,28 +108,39 @@ export default function ProfileScreen() {
         <Text h4 style={styles.sectionTitle}>
           Settings
         </Text>
-        <ListItem bottomDivider containerStyle={styles.listItem}>
-          <ListItem.Content style={styles.listItemContent}>
-            <ListItem.Title style={styles.listItemTitle}>Notifications</ListItem.Title>
-            <ListItem.Subtitle style={styles.listItemSubtitle}>Manage notification settings</ListItem.Subtitle>
+        <ListItem bottomDivider>
+          <ListItem.Content>
+            <ListItem.Title>Notifications</ListItem.Title>
+            <ListItem.Subtitle>Manage notification settings</ListItem.Subtitle>
           </ListItem.Content>
-          <ListItem.Chevron style={styles.listItemChevron} />
+          <ListItem.Chevron />
         </ListItem>
 
-        <ListItem bottomDivider containerStyle={styles.listItem}>
-          <ListItem.Content style={styles.listItemContent}>
-            <ListItem.Title style={styles.listItemTitle}>Privacy</ListItem.Title>
-            <ListItem.Subtitle style={styles.listItemSubtitle}>Control your privacy settings</ListItem.Subtitle>
+        <ListItem bottomDivider>
+          <ListItem.Content>
+            <ListItem.Title>Privacy</ListItem.Title>
+            <ListItem.Subtitle>Control your privacy settings</ListItem.Subtitle>
           </ListItem.Content>
-          <ListItem.Chevron style={styles.listItemChevron} />
+          <ListItem.Chevron />
         </ListItem>
 
-        <ListItem bottomDivider containerStyle={styles.listItem}>
-          <ListItem.Content style={styles.listItemContent}>
-            <ListItem.Title style={styles.listItemTitle}>Account</ListItem.Title>
-            <ListItem.Subtitle style={styles.listItemSubtitle}>Manage your account settings</ListItem.Subtitle>
+        <ListItem 
+          bottomDivider
+          onPress={() => navigation.navigate('UnderDuressSettings')}
+        >
+          <ListItem.Content>
+            <ListItem.Title>Under Duress Settings</ListItem.Title>
+            <ListItem.Subtitle>Configure your safety account</ListItem.Subtitle>
           </ListItem.Content>
-          <ListItem.Chevron style={styles.listItemChevron} />
+          <ListItem.Chevron />
+        </ListItem>
+
+        <ListItem bottomDivider>
+          <ListItem.Content>
+            <ListItem.Title>Account</ListItem.Title>
+            <ListItem.Subtitle>Manage your account settings</ListItem.Subtitle>
+          </ListItem.Content>
+          <ListItem.Chevron />
         </ListItem>
       </View>
 
@@ -131,25 +148,25 @@ export default function ProfileScreen() {
         <Text h4 style={styles.sectionTitle}>
           Support
         </Text>
-        <ListItem bottomDivider containerStyle={styles.listItem}>
-          <ListItem.Content style={styles.listItemContent}>
-            <ListItem.Title style={styles.listItemTitle}>Help Center</ListItem.Title>
+        <ListItem bottomDivider>
+          <ListItem.Content>
+            <ListItem.Title>Help Center</ListItem.Title>
           </ListItem.Content>
-          <ListItem.Chevron style={styles.listItemChevron} />
+          <ListItem.Chevron />
         </ListItem>
 
-        <ListItem bottomDivider containerStyle={styles.listItem}>
-          <ListItem.Content style={styles.listItemContent}>
-            <ListItem.Title style={styles.listItemTitle}>Contact Us</ListItem.Title>
+        <ListItem bottomDivider>
+          <ListItem.Content>
+            <ListItem.Title>Contact Us</ListItem.Title>
           </ListItem.Content>
-          <ListItem.Chevron style={styles.listItemChevron} />
+          <ListItem.Chevron />
         </ListItem>
 
-        <ListItem bottomDivider containerStyle={styles.listItem}>
-          <ListItem.Content style={styles.listItemContent}>
-            <ListItem.Title style={styles.listItemTitle}>About</ListItem.Title>
+        <ListItem bottomDivider>
+          <ListItem.Content>
+            <ListItem.Title>About</ListItem.Title>
           </ListItem.Content>
-          <ListItem.Chevron style={styles.listItemChevron} />
+          <ListItem.Chevron />
         </ListItem>
       </View>
 

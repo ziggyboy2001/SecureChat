@@ -24,6 +24,12 @@ export class User {
   @Column({ type: 'timestamp', nullable: true })
   lastSeen?: Date;
 
+  @Column({ default: false })
+  isUnderDuressAccount!: boolean;
+
+  @Column({ nullable: true })
+  mainAccountId?: string;
+
   @CreateDateColumn()
   createdAt!: Date;
 
