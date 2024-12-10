@@ -12,12 +12,13 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
+import { colors, spacing, borderRadius, typography, shadows, layout } from '../theme';
 
 type LoginScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('test@test.com');
+  const [password, setPassword] = useState('password');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -57,19 +58,23 @@ export default function LoginScreen() {
 
           <Input
             placeholder="Email"
+            placeholderTextColor={colors.text.subtitle}
             value={email}
+            inputStyle={{ color: colors.text.primary }}
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
-            leftIcon={{ type: 'ionicon', name: 'mail-outline' }}
+            leftIcon={{ type: 'ionicon', name: 'mail-outline', color: colors.text.subtitle }}
           />
 
           <Input
             placeholder="Password"
+            placeholderTextColor={colors.text.subtitle}
+            inputStyle={{ color: colors.text.primary }}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
-            leftIcon={{ type: 'ionicon', name: 'lock-closed-outline' }}
+            leftIcon={{ type: 'ionicon', name: 'lock-closed-outline', color: colors.text.subtitle }}
           />
 
           {error ? (
@@ -87,6 +92,7 @@ export default function LoginScreen() {
           <Button
             title="Don't have an account? Sign Up"
             type="clear"
+            titleStyle={styles.signUpButtonText}  
             onPress={() => navigation.navigate('Register')}
           />
         </View>
@@ -98,7 +104,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background.primary,
   },
   inner: {
     flex: 1,
@@ -108,10 +114,11 @@ const styles = StyleSheet.create({
   title: {
     textAlign: 'center',
     marginBottom: 12,
+    color: colors.text.primary,
   },
   subtitle: {
     textAlign: 'center',
-    color: '#666',
+    color: colors.text.subtitle,
     marginBottom: 32,
   },
   errorText: {
@@ -120,12 +127,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   button: {
-    backgroundColor: '#007AFF',
-    borderRadius: 25,
+    borderColor: colors.button.primary,
+    backgroundColor: colors.background.primary,
+    borderWidth: 1,
+    borderRadius: borderRadius.sm,
     height: 50,
   },
   buttonContainer: {
     marginVertical: 12,
-    borderRadius: 25,
+    borderRadius: borderRadius.sm,
+  },
+  signUpButtonText: {
+    color: colors.text.subtitle,
   },
 }); 

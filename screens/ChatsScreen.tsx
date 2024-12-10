@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
+import { colors, spacing, borderRadius, typography, shadows, layout } from '../theme';
 
 interface Chat {
   id: string;
@@ -129,7 +130,7 @@ export default function ChatsScreen() {
         renderItem={renderItem}
         keyExtractor={item => item.id}
         refreshControl={
-          <RefreshControl refreshing={loading} onRefresh={fetchChats} />
+          <RefreshControl refreshing={loading} onRefresh={fetchChats} colors={[colors.primary]}/>
         }
         contentContainerStyle={styles.listContainer}
       />
@@ -140,17 +141,17 @@ export default function ChatsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background.primary,
   },
   searchContainer: {
     backgroundColor: 'transparent',
     borderTopWidth: 0,
     borderBottomWidth: 0,
-    paddingHorizontal: 15,
-    marginBottom: 5,
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
   },
   searchInputContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.input.background,
   },
   listContainer: {
     paddingBottom: 15,
@@ -158,8 +159,8 @@ const styles = StyleSheet.create({
   chatItem: {
     marginHorizontal: 15,
     marginVertical: 5,
-    borderRadius: 12,
-    backgroundColor: '#fff',
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.background.secondary,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -172,26 +173,27 @@ const styles = StyleSheet.create({
   username: {
     fontWeight: 'bold',
     fontSize: 16,
+    color: colors.text.primary,
   },
   lastMessage: {
-    color: '#666',
-    marginTop: 3,
+    color: colors.text.subtitle,
+    marginTop: spacing.xs,
   },
   time: {
     fontSize: 12,
-    color: '#666',
-    marginBottom: 5,
+    color: colors.text.subtitle,
+    marginBottom: spacing.sm,
   },
   badge: {
-    backgroundColor: '#007AFF',
-    borderRadius: 10,
+    backgroundColor: colors.button.primary,
+    borderRadius: borderRadius.circle,
     minWidth: 20,
     height: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   badgeText: {
-    color: '#fff',
+    color: colors.text.inverse,
     fontSize: 12,
     fontWeight: 'bold',
     paddingHorizontal: 6,

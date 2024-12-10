@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
+import { colors, spacing, borderRadius, typography, shadows, layout } from '../theme';
 
 type RegisterScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 

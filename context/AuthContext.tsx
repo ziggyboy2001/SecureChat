@@ -69,22 +69,29 @@ export const Provider: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   const register = async (username: string, email: string, password: string) => {
     try {
+      console.log('Sending registration request:', { username, email });
       const response = await fetch(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ username, email, password })
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Registration failed:', errorData);
+        throw new Error(errorData || 'Registration failed');
+      }
 
+      const data = await response.json();
       setUser(data.user);
       setToken(data.token);
       await AsyncStorage.setItem('token', data.token);
       await AsyncStorage.setItem('user', JSON.stringify(data.user));
     } catch (error) {
+      console.error('Registration error:', error);
       throw error;
     }
   };

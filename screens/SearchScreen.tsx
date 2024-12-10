@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
+import { colors, spacing, borderRadius, typography, shadows, layout } from '../theme';
 
 type SearchScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -106,6 +107,7 @@ const SearchScreen = () => {
       <TextInput
         style={styles.searchInput}
         placeholder="Search users..."
+        placeholderTextColor={colors.text.subtitle}
         value={searchQuery}
         onChangeText={(text) => {
           setSearchQuery(text);
@@ -114,7 +116,7 @@ const SearchScreen = () => {
         autoCapitalize="none"
       />
       {loading ? (
-        <ActivityIndicator style={styles.loader} size="large" color="#0066CC" />
+        <ActivityIndicator style={styles.loader} size="large" color={colors.primary} />
       ) : (
         <FlatList
           data={users}
@@ -134,41 +136,43 @@ const SearchScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background.primary,
   },
   searchInput: {
-    height: 50,
+    height: layout.inputHeight,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    margin: 10,
-    fontSize: 16,
+    borderColor: colors.border.primary,
+    borderRadius: borderRadius.sm,
+    paddingHorizontal: spacing.md,
+    margin: spacing.sm,
+    ...typography.body,
+    color: colors.text.primary,
   },
   userItem: {
     flexDirection: 'row',
-    padding: 15,
+    padding: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: colors.border.primary,
     alignItems: 'center',
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: layout.avatarSizes.medium,
+    height: layout.avatarSizes.medium,
+    borderRadius: layout.avatarSizes.medium / 2,
   },
   userInfo: {
     flex: 1,
-    marginLeft: 15,
+    marginLeft: spacing.md,
   },
   username: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    ...typography.h4,
+    fontWeight: '700',
+    color: colors.text.primary,
   },
   email: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
+    ...typography.bodySmall,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
   },
   statusContainer: {
     alignItems: 'flex-end',
@@ -176,20 +180,20 @@ const styles = StyleSheet.create({
   statusDot: {
     width: 8,
     height: 8,
-    borderRadius: 4,
-    marginBottom: 4,
+    borderRadius: borderRadius.circle,
+    marginBottom: spacing.xs,
   },
   lastSeen: {
-    fontSize: 12,
-    color: '#666',
+    ...typography.caption,
+    color: colors.text.secondary,
   },
   loader: {
-    marginTop: 20,
+    marginTop: spacing.lg,
   },
   emptyText: {
     textAlign: 'center',
-    marginTop: 20,
-    color: '#666',
+    marginTop: spacing.lg,
+    color: colors.text.secondary,
   },
 });
 

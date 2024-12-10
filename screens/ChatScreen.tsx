@@ -16,6 +16,8 @@ import { API_URL, SOCKET_URL, REACTIONS } from '../config';
 import io, { Socket } from 'socket.io-client';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types/navigation';
+import { colors, spacing, borderRadius, typography, shadows, layout } from '../theme';
+import ReactionsMenu from '../server/src/components/ReactionMenuProps';
 
 interface Message {
   id: string;
@@ -48,6 +50,7 @@ export default function ChatScreen({ route }: Props) {
   const { user, token } = useAuth();
   const socketRef = useRef<Socket>();
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -76,7 +79,14 @@ export default function ChatScreen({ route }: Props) {
       socketRef.current.on('new_message', (message: Message) => {
         console.log('Received new message:', message);
         if (message.sender.id === userId || message.sender.id === user.id) {
-          setMessages(prev => [message, ...prev]);
+          setMessages(prev => {
+            // Check if message already exists to prevent duplicates
+            if (prev.some(m => m.id === message.id)) {
+              return prev;
+            }
+            return [message, ...prev];
+          });
+          
           if (message.sender.id === userId) {
             socketRef.current?.emit('message_read', {
               messageId: message.id,
@@ -211,13 +221,40 @@ export default function ChatScreen({ route }: Props) {
   };
 
   const handleReaction = (messageId: string, reaction: string) => {
+    console.log('handleReaction called with:', { messageId, reaction });
     if (!user) return;
 
+    setMessages(prev => {
+      console.log('Previous messages:', prev);
+      const newMessages = prev.map(msg => {
+        if (msg.id === messageId) {
+          console.log('Updating message:', msg.id);
+          // Remove existing reaction from this user if it exists
+          const filteredReactions = msg.reactions.filter(r => r.user !== user.id);
+          // Add new reaction
+          const newMsg = {
+            ...msg,
+            reactions: [...filteredReactions, { user: user.id, reaction }]
+          };
+          console.log('Updated message:', newMsg);
+          return newMsg;
+        }
+        return msg;
+      });
+      console.log('New messages:', newMessages);
+      return newMessages;
+    });
+
+    // Emit to socket
     socketRef.current?.emit('message_reaction', {
       messageId,
       userId: user.id,
       reaction,
     });
+  };
+
+  const handlePressOutside = () => {
+    setSelectedMessageId(null);
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
@@ -241,31 +278,67 @@ export default function ChatScreen({ route }: Props) {
           <Text style={styles.messageText}>{item.content}</Text>
         )}
 
-        <View style={styles.messageFooter}>
-          <Text style={styles.messageTime}>
-            {new Date(item.createdAt).toLocaleTimeString([], {
-              hour: '2-digit',
-              minute: '2-digit',
-            })}
-          </Text>
-          {isOwnMessage && item.readBy.includes(userId) && (
-            <Ionicons name="checkmark-done" size={16} color="#007AFF" />
-          )}
+        <View style={styles.secondaryWrapper}>
+          <View style={styles.messageFooter}>
+            <Text style={styles.messageTime}>
+              {new Date(item.createdAt).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </Text>
+            {isOwnMessage && item.readBy.includes(userId) && (
+              <Ionicons name="checkmark-done" size={16} color={colors.text.primary} />
+            )}
+          </View>
+
+          <View style={styles.reactionsContainer}>
+            {item.reactions
+              .filter(reaction => reaction.user === user?.id || reaction.user === userId)
+              .map((reaction, index) => (
+                <Text 
+                  key={index} 
+                  style={[
+                    styles.reaction,
+                    reaction.user === user?.id ? styles.reactionRight : styles.reactionLeft
+                  ]}
+                >
+                  {reaction.reaction}
+                </Text>
+            ))}
+            <TouchableOpacity
+              onPress={() => setSelectedMessageId(item.id)}
+              style={styles.addReaction}
+            >
+              <Text style={{color: colors.text.primary}}>+</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
-        <View style={styles.reactionsContainer}>
-          {item.reactions.map((reaction, index) => (
-            <Text key={index} style={styles.reaction}>
-              {reaction.reaction}
-            </Text>
-          ))}
-          <TouchableOpacity
-            onPress={() => handleReaction(item.id, REACTIONS[0])}
-            style={styles.addReaction}
-          >
-            <Text>+</Text>
-          </TouchableOpacity>
-        </View>
+        {selectedMessageId === item.id && (
+          <>
+            <View 
+              style={[
+                styles.reactionMenu,
+                isOwnMessage ? styles.reactionMenuRight : styles.reactionMenuLeft
+              ]}
+              pointerEvents="box-none"
+            >
+              <ReactionsMenu
+                visible={true}
+                onSelect={(reaction: string) => {
+                  console.log('Reaction selected:', reaction);
+                  handleReaction(item.id, reaction);
+                  setSelectedMessageId(null);
+                }}
+              />
+            </View>
+            <TouchableOpacity 
+              style={[styles.overlay, { zIndex: 999 }]}
+              onPress={handlePressOutside} 
+              activeOpacity={0}
+            />
+          </>
+        )}
       </View>
     );
   };
@@ -294,11 +367,12 @@ export default function ChatScreen({ route }: Props) {
 
       <View style={styles.inputContainer}>
         <TouchableOpacity onPress={handleImagePick} style={styles.attachButton}>
-          <Ionicons name="image-outline" size={24} color="#007AFF" />
+          <Ionicons name="image-outline" size={24} color={colors.primary} />
         </TouchableOpacity>
 
         <Input
           placeholder="Type a message..."
+          placeholderTextColor={colors.text.subtitle}
           value={newMessage}
           onChangeText={text => {
             setNewMessage(text);
@@ -306,6 +380,7 @@ export default function ChatScreen({ route }: Props) {
           }}
           containerStyle={styles.input}
           inputContainerStyle={styles.inputField}
+          inputStyle={styles.inputText}
           multiline
         />
 
@@ -327,108 +402,141 @@ export default function ChatScreen({ route }: Props) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background.primary,
   },
   messagesList: {
-    paddingHorizontal: 15,
-    paddingVertical: 20,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
   },
   messageContainer: {
     maxWidth: '80%',
-    marginVertical: 5,
-    padding: 12,
-    borderRadius: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    marginVertical: spacing.xs,
+    padding: spacing.md,
+    borderRadius: borderRadius.lg,
+    ...shadows.small,
   },
   ownMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: '#007AFF',
+    borderColor: colors.message.own,
+    borderWidth: 1,
   },
   otherMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: '#fff',
+    borderColor: colors.message.other,
+    borderWidth: 1,
   },
   messageText: {
-    color: '#fff',
-    fontSize: 16,
+    ...typography.body,
+    color: colors.text.primary,
   },
   imageMessage: {
     width: 200,
     height: 200,
-    borderRadius: 10,
+    borderRadius: borderRadius.sm,
+  },
+  secondaryWrapper: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   messageFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 5,
+    marginTop: spacing.xs,
   },
   messageTime: {
-    fontSize: 12,
-    color: '#rgba(255, 255, 255, 0.7)',
-    marginRight: 5,
+    ...typography.caption,
+    color: colors.message.time,
+    marginRight: spacing.xs,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.background.primary,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: colors.border.secondary,
   },
   input: {
     flex: 1,
-    marginHorizontal: 10,
+    marginHorizontal: spacing.sm,
   },
   inputField: {
     borderBottomWidth: 0,
   },
   attachButton: {
-    padding: 10,
+    padding: spacing.sm,
   },
   sendButton: {
-    backgroundColor: '#007AFF',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    borderColor: colors.button.primary,
+    borderWidth: 1,
+    width: layout.inputHeight,
+    height: layout.inputHeight,
+    borderRadius: borderRadius.circle,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: '#ccc',
+    borderColor: colors.button.disabled,
   },
   typingIndicator: {
-    padding: 10,
-    backgroundColor: '#fff',
+    padding: spacing.sm,
+    backgroundColor: colors.background.primary,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.border.secondary,
   },
   typingText: {
-    color: '#666',
-    fontSize: 14,
+    ...typography.bodySmall,
+    color: colors.text.secondary,
   },
   reactionsContainer: {
     flexDirection: 'row',
-    marginTop: 5,
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginLeft: spacing.sm,
   },
   reaction: {
     fontSize: 16,
-    marginRight: 5,
+    marginHorizontal: spacing.xs,
   },
   addReaction: {
-    backgroundColor: '#fff',
+    borderColor: colors.text.secondary,
+    borderWidth: 1,
     width: 20,
     height: 20,
-    borderRadius: 10,
+    borderRadius: borderRadius.circle,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  inputText: {
+    color: colors.text.inverse,
+  },
+  reactionMenu: {
+    position: 'absolute',
+    bottom: '52%',
+    marginBottom: 50,
+    zIndex: 1001,
+    elevation: 5,
+  },
+  reactionMenuRight: {
+    right: 0,
+  },
+  reactionMenuLeft: {
+    left: 0,
+  },
+  reactionRight: {
+    alignSelf: 'flex-end',
+  },
+  reactionLeft: {
+    alignSelf: 'flex-start',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
+    zIndex: 999,
   },
 }); 

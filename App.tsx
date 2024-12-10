@@ -13,6 +13,7 @@ import ProfileScreen from './screens/ProfileScreen';
 import SearchScreen from './screens/SearchScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList, TabParamList } from './types/navigation';
+import { navigationTheme, colors, typography } from './theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -33,7 +34,7 @@ const MainTabs = () => (
 
         return <Ionicons name={iconName} size={size} color={color} />;
       },
-      tabBarActiveTintColor: '#007AFF',
+      tabBarActiveTintColor: colors.primary,
       tabBarInactiveTintColor: 'gray',
     })}
   >
@@ -48,15 +49,16 @@ export default function App() {
     <Provider>
       <ThemeProvider>
         <SafeAreaProvider>
-          <NavigationContainer>
+          <NavigationContainer theme={navigationTheme}>
             <Stack.Navigator
               screenOptions={{
                 headerStyle: {
-                  backgroundColor: '#007AFF',
+                  backgroundColor: colors.background.primary,
                 },
-                headerTintColor: '#fff',
+                headerTintColor: colors.text.inverse,
                 headerTitleStyle: {
-                  fontWeight: 'bold',
+                  fontSize: typography.h4.fontSize,
+                  fontWeight: '700',
                 },
               }}
             >

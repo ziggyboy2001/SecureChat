@@ -10,6 +10,7 @@ import { Avatar, Text, ListItem, Button } from '@rneui/themed';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
+import { colors, spacing, borderRadius, typography, shadows, layout } from '../theme';
 
 export default function ProfileScreen() {
   const { user, token, logout } = useAuth();
@@ -101,28 +102,28 @@ export default function ProfileScreen() {
         <Text h4 style={styles.sectionTitle}>
           Settings
         </Text>
-        <ListItem bottomDivider>
-          <ListItem.Content>
-            <ListItem.Title>Notifications</ListItem.Title>
-            <ListItem.Subtitle>Manage notification settings</ListItem.Subtitle>
+        <ListItem bottomDivider containerStyle={styles.listItem}>
+          <ListItem.Content style={styles.listItemContent}>
+            <ListItem.Title style={styles.listItemTitle}>Notifications</ListItem.Title>
+            <ListItem.Subtitle style={styles.listItemSubtitle}>Manage notification settings</ListItem.Subtitle>
           </ListItem.Content>
-          <ListItem.Chevron />
+          <ListItem.Chevron style={styles.listItemChevron} />
         </ListItem>
 
-        <ListItem bottomDivider>
-          <ListItem.Content>
-            <ListItem.Title>Privacy</ListItem.Title>
-            <ListItem.Subtitle>Control your privacy settings</ListItem.Subtitle>
+        <ListItem bottomDivider containerStyle={styles.listItem}>
+          <ListItem.Content style={styles.listItemContent}>
+            <ListItem.Title style={styles.listItemTitle}>Privacy</ListItem.Title>
+            <ListItem.Subtitle style={styles.listItemSubtitle}>Control your privacy settings</ListItem.Subtitle>
           </ListItem.Content>
-          <ListItem.Chevron />
+          <ListItem.Chevron style={styles.listItemChevron} />
         </ListItem>
 
-        <ListItem bottomDivider>
-          <ListItem.Content>
-            <ListItem.Title>Account</ListItem.Title>
-            <ListItem.Subtitle>Manage your account settings</ListItem.Subtitle>
+        <ListItem bottomDivider containerStyle={styles.listItem}>
+          <ListItem.Content style={styles.listItemContent}>
+            <ListItem.Title style={styles.listItemTitle}>Account</ListItem.Title>
+            <ListItem.Subtitle style={styles.listItemSubtitle}>Manage your account settings</ListItem.Subtitle>
           </ListItem.Content>
-          <ListItem.Chevron />
+          <ListItem.Chevron style={styles.listItemChevron} />
         </ListItem>
       </View>
 
@@ -130,25 +131,25 @@ export default function ProfileScreen() {
         <Text h4 style={styles.sectionTitle}>
           Support
         </Text>
-        <ListItem bottomDivider>
-          <ListItem.Content>
-            <ListItem.Title>Help Center</ListItem.Title>
+        <ListItem bottomDivider containerStyle={styles.listItem}>
+          <ListItem.Content style={styles.listItemContent}>
+            <ListItem.Title style={styles.listItemTitle}>Help Center</ListItem.Title>
           </ListItem.Content>
-          <ListItem.Chevron />
+          <ListItem.Chevron style={styles.listItemChevron} />
         </ListItem>
 
-        <ListItem bottomDivider>
-          <ListItem.Content>
-            <ListItem.Title>Contact Us</ListItem.Title>
+        <ListItem bottomDivider containerStyle={styles.listItem}>
+          <ListItem.Content style={styles.listItemContent}>
+            <ListItem.Title style={styles.listItemTitle}>Contact Us</ListItem.Title>
           </ListItem.Content>
-          <ListItem.Chevron />
+          <ListItem.Chevron style={styles.listItemChevron} />
         </ListItem>
 
-        <ListItem bottomDivider>
-          <ListItem.Content>
-            <ListItem.Title>About</ListItem.Title>
+        <ListItem bottomDivider containerStyle={styles.listItem}>
+          <ListItem.Content style={styles.listItemContent}>
+            <ListItem.Title style={styles.listItemTitle}>About</ListItem.Title>
           </ListItem.Content>
-          <ListItem.Chevron />
+          <ListItem.Chevron style={styles.listItemChevron} />
         </ListItem>
       </View>
 
@@ -166,17 +167,17 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background.primary,
   },
   header: {
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background.primary,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.background.secondary,
   },
   avatar: {
-    backgroundColor: '#e1e1e1',
+    backgroundColor: colors.background.primary,
     marginBottom: 15,
   },
   username: {
@@ -188,27 +189,46 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: 20,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background.primary,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: colors.border.secondary,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: colors.background.secondary,
   },
   sectionTitle: {
     padding: 15,
     marginBottom: 0,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: colors.background.primary,
   },
   logoutButton: {
-    backgroundColor: '#ff3b30',
+    backgroundColor: colors.button.primary,
+    borderRadius: borderRadius.sm,
     height: 50,
     marginTop: 30,
   },
   logoutButtonText: {
     fontSize: 18,
+    fontWeight: '700',
   },
   logoutButtonContainer: {
     marginHorizontal: 15,
     marginBottom: 30,
   },
+  listItemContent: {
+    backgroundColor: colors.background.primary,
+  },
+  listItemTitle: {
+    color: colors.text.primary,
+  },
+  listItemSubtitle: {
+    color: colors.text.subtitle,
+  },
+  listItem: {
+    borderBottomColor: colors.border.secondary,
+    backgroundColor: colors.background.primary,
+  },
+  listItemChevron: {
+    color: colors.border.secondary,
+  },
 }); 
+
