@@ -14,6 +14,8 @@ export type RootStackParamList = {
     userId: string;
     username: string;
     avatar?: string;
+    isBot?: boolean;
+    botTheme?: string;
   };
   UnderDuressSettings: undefined;
 }; 

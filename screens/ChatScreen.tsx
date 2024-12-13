@@ -7,6 +7,7 @@ import {
   Platform,
   TouchableOpacity,
   Image,
+  Alert,
 } from 'react-native';
 import { Input, Text } from '@rneui/themed';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,6 +19,8 @@ import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types/navigation';
 import { colors, spacing, borderRadius, typography, shadows, layout } from '../theme';
 import ReactionsMenu from '../server/src/components/ReactionMenuProps';
+import { useNavigation } from '@react-navigation/native';
+import { generateBotResponse } from '../services/openai';
 
 interface Message {
   id: string;
@@ -47,10 +50,13 @@ export default function ChatScreen({ route }: Props) {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
-  const { user, token } = useAuth();
+  const { user, token, switchToUnderDuress } = useAuth();
   const socketRef = useRef<Socket>();
   const typingTimeoutRef = useRef<NodeJS.Timeout>();
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const navigation = useNavigation();
+  const [messageHistory, setMessageHistory] = useState<Message[]>([]);
+  const [isGeneratingHistory, setIsGeneratingHistory] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -159,26 +165,142 @@ export default function ChatScreen({ route }: Props) {
     }
   };
 
-  const handleSend = async () => {
-    if (!newMessage.trim() || !user) return;
+  const generateFakeHistory = async () => {
+    if (!route.params.isBot || !route.params.botTheme) return;
+    
+    setIsGeneratingHistory(true);
+    try {
+      // Generate 5-10 message pairs for history
+      const numberOfMessages = Math.floor(Math.random() * 6) + 5;
+      const fakeHistory: Message[] = [];
+      
+      for (let i = 0; i < numberOfMessages; i++) {
+        // Generate a fake user message
+        const userMessage = await generateBotResponse(
+          'user_simulator',
+          fakeHistory.map(msg => msg.content),
+          `Generate a realistic message to a ${route.params.botTheme}`
+        );
+
+        // Add user message to history
+        fakeHistory.push({
+          id: `fake-${Date.now()}-${i}a`,
+          content: userMessage,
+          sender: {
+            id: user?.id || '',
+            username: user?.username || '',
+          },
+          type: 'text',
+          createdAt: new Date(Date.now() - (numberOfMessages - i) * 3600000).toISOString(),
+          readBy: [route.params.userId],
+          reactions: []
+        });
+
+        // Generate bot response
+        const botResponse = await generateBotResponse(
+          route.params.botTheme,
+          fakeHistory.map(msg => msg.content),
+          userMessage
+        );
+
+        // Add bot response to history
+        fakeHistory.push({
+          id: `fake-${Date.now()}-${i}b`,
+          content: botResponse,
+          sender: {
+            id: route.params.userId,
+            username: route.params.username,
+          },
+          type: 'text',
+          createdAt: new Date(Date.now() - (numberOfMessages - i) * 3600000 + 300000).toISOString(),
+          readBy: [user?.id || ''],
+          reactions: []
+        });
+      }
+
+      setMessageHistory(fakeHistory);
+      setMessages(fakeHistory);
+    } catch (error) {
+      console.error('Error generating fake history:', error);
+    } finally {
+      setIsGeneratingHistory(false);
+    }
+  };
+
+  useEffect(() => {
+    if (route.params.isBot && messages.length === 0) {
+      generateFakeHistory();
+    }
+  }, [route.params.isBot]);
+
+  const sendMessage = async (content: string) => {
+    if (!content.trim() || !user) return;
+
+    const newMessage: Message = {
+      id: `temp-${Date.now()}`,
+      content,
+      sender: {
+        id: user.id,
+        username: user.username,
+      },
+      type: 'text',
+      createdAt: new Date().toISOString(),
+      readBy: [],
+      reactions: []
+    };
+
+    // Add user message immediately
+    setMessages(prev => [newMessage, ...prev]);
+    setNewMessage('');
 
     try {
-      const messageData = {
-        senderId: user.id,
-        receiverId: userId,
-        content: newMessage,
-        type: 'text' as const,
-      };
+      if (route.params.isBot) {
+        // Generate bot response
+        const botResponse = await generateBotResponse(
+          route.params.botTheme || 'default',
+          messageHistory.map(msg => msg.content),
+          content
+        );
 
-      console.log('Sending message:', messageData);
-      socketRef.current?.emit('private_message', messageData, (error: any) => {
-        if (error) {
-          console.error('Error sending message:', error);
+        // Add bot response
+        const botMessage: Message = {
+          id: `bot-${Date.now()}`,
+          content: botResponse,
+          sender: {
+            id: route.params.userId,
+            username: route.params.username,
+          },
+          type: 'text',
+          createdAt: new Date().toISOString(),
+          readBy: [user.id],
+          reactions: []
+        };
+
+        setMessages(prev => [botMessage, ...prev]);
+        setMessageHistory(prev => [...prev, newMessage, botMessage]);
+      } else {
+        // Handle regular user messages as before
+        const response = await fetch(`${API_URL}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            content,
+            receiverId: route.params.userId,
+            senderId: user?.id,
+            type: 'text'
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to send message');
         }
-      });
-      setNewMessage('');
+      }
     } catch (error) {
-      console.error('Error in handleSend:', error);
+      console.error('Message error:', error);
+      Alert.alert('Error', 'Failed to send message');
     }
   };
 
@@ -255,6 +377,20 @@ export default function ChatScreen({ route }: Props) {
 
   const handlePressOutside = () => {
     setSelectedMessageId(null);
+  };
+
+  const handleUnderDuress = async () => {
+    try {
+      await switchToUnderDuress();
+      // The navigation should refresh automatically since we're updating the auth context
+      // But we can force it if needed:
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Chat' as never }],
+      });
+    } catch (error) {
+      console.error('Failed to switch to under duress mode:', error);
+    }
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
@@ -385,7 +521,7 @@ export default function ChatScreen({ route }: Props) {
         />
 
         <TouchableOpacity
-          onPress={handleSend}
+          onPress={() => sendMessage(newMessage)}
           disabled={!newMessage.trim()}
           style={[
             styles.sendButton,

@@ -1,6 +1,7 @@
 import { DataSource } from "typeorm";
 import { User } from "../entities/User";
 import { Message } from "../entities/Message";
+import { UnderDuressSettings } from '../entities/UnderDuressSettings';
 import dotenv from 'dotenv';
 
 // Load environment variables
@@ -15,7 +16,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_NAME || "chat_app",
   synchronize: true,
   logging: true,
-  entities: [User, Message],
+  entities: [User, Message, UnderDuressSettings],
   subscribers: [],
   migrations: [],
 });

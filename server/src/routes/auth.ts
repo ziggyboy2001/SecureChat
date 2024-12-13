@@ -1,6 +1,6 @@
 import express from 'express';
 import { register, login, getUsers, searchUsers } from '../controllers/authController';
-import { getSettings, updateSettings, switchToUnderDuress } from '../controllers/underDuressController';
+import { getSettings, updateSettings, switchToUnderDuress, checkUnderDuressSettings } from '../controllers/underDuressController';
 import { authenticate } from '../middleware/auth';
 
 const router = express.Router();
@@ -15,5 +15,6 @@ router.get('/search', authenticate, searchUsers);
 router.get('/under-duress-settings', authenticate, getSettings);
 router.post('/under-duress-settings', authenticate, updateSettings);
 router.post('/switch-to-duress', authenticate, switchToUnderDuress);
+router.get('/check-duress-settings', authenticate, checkUnderDuressSettings);
 
 export default router; 

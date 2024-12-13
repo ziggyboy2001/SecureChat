@@ -13,21 +13,30 @@ import { API_URL } from '../config';
 import { RootStackParamList } from '../types/navigation';
 import { colors, spacing } from '../theme';
 import { format } from 'date-fns';
+import { BOT_PROFILES } from '../constants/botProfiles';
 
 type ChatsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 interface Chat {
   id: string;
+  messages?: Array<{
+    content: string;
+    timestamp: string;
+  }>;
   user: {
     id: string;
     username: string;
-    avatar?: string;
+    avatar?: string | null;
+    isUnderDuressAccount: boolean;
+    mainAccountId: string;
   };
   lastMessage?: {
     content: string;
     timestamp: string;
   };
   unreadCount: number;
+  isBot?: boolean;
+  botTheme?: string;
 }
 
 export default function ChatsScreen() {
@@ -35,6 +44,29 @@ export default function ChatsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const { user, token } = useAuth();
   const navigation = useNavigation<ChatsScreenNavigationProp>();
+
+  const initializeBotChats = () => {
+    const botChats = BOT_PROFILES.map(bot => ({
+      id: bot.id,
+      user: {
+        id: bot.id,
+        username: bot.username,
+        avatar: bot.avatar,
+        isUnderDuressAccount: false,
+        mainAccountId: bot.id
+      },
+      isBot: true,
+      botTheme: bot.theme,
+      messages: [],
+      lastMessage: {
+        content: `Hi! I'm your ${bot.theme} assistant. How can I help you today?`,
+        timestamp: new Date().toISOString()
+      },
+      unreadCount: 1
+    }));
+
+    return botChats;
+  };
 
   const fetchChats = async () => {
     try {
@@ -50,14 +82,28 @@ export default function ChatsScreen() {
 
       const data = await response.json();
       
-      // If user is under duress, only show fake conversations
       if (user?.isUnderDuressAccount) {
-        setChats(data.filter((chat: Chat) => chat.user.id.startsWith('fake_')));
+        // For duress accounts, show both fake chats and bot chats
+        const duressChats = data.filter((chat: Chat) => 
+          chat.user.username.startsWith('fake_')
+        );
+        const botChats = initializeBotChats();
+        setChats([...botChats, ...duressChats]);
       } else {
-        setChats(data.filter((chat: Chat) => !chat.user.id.startsWith('fake_')));
+        // For real accounts, only show real chats
+        const realChats = data.filter((chat: Chat) => 
+          !chat.user.username.startsWith('fake_')
+        );
+        setChats(realChats);  // Remove botChats for real accounts
       }
     } catch (error) {
       console.error('Error fetching chats:', error);
+      // Only show bot chats in duress mode if API fails
+      if (user?.isUnderDuressAccount) {
+        setChats(initializeBotChats());
+      } else {
+        setChats([]);
+      }
     }
   };
 
@@ -88,7 +134,9 @@ export default function ChatsScreen() {
       onPress={() => navigation.navigate('Chat', {
         userId: item.user.id,
         username: item.user.username,
-        avatar: item.user.avatar,
+        avatar: item.user.avatar || undefined,
+        isBot: item.isBot,
+        botTheme: item.botTheme
       })}
       bottomDivider
       containerStyle={styles.chatItem}

@@ -8,6 +8,7 @@ interface User {
   email: string;
   avatar: string;
   isUnderDuressAccount: boolean;
+  mainAccountId?: string;
 }
 
 interface AuthContextType {
@@ -17,6 +18,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  switchToUnderDuress: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -108,6 +110,38 @@ export const Provider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     }
   };
 
+  const switchToUnderDuress = async () => {
+    try {
+      const response = await fetch(`${API_URL}/auth/switch-to-duress`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+
+      // Clear current auth state
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('user');
+
+      // Set new duress auth state
+      await AsyncStorage.setItem('token', data.token);
+      await AsyncStorage.setItem('user', JSON.stringify(data.user));
+
+      // Update context with duress account
+      setToken(data.token);
+      setUser(data.user);
+    } catch (error) {
+      console.error('Error switching to under duress:', error);
+      throw error;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -117,6 +151,7 @@ export const Provider: React.FC<{ children: React.ReactNode }> = ({ children }) 
         login,
         register,
         logout,
+        switchToUnderDuress,
       }}
     >
       {children}

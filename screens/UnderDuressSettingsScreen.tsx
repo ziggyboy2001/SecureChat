@@ -9,6 +9,7 @@ import { Input, Button, Text, Switch, Slider } from '@rneui/themed';
 import { useAuth } from '../context/AuthContext';
 import { API_URL } from '../config';
 import { colors, spacing, typography } from '../theme';
+import { BOT_PROMPTS } from '../services/openai';
 
 interface UnderDuressSettings {
   showTimestamps: boolean;
@@ -20,6 +21,7 @@ interface UnderDuressSettings {
     email: string;
     password: string;
   };
+  selectedBots: string[];
 }
 
 export default function UnderDuressSettingsScreen() {
@@ -30,6 +32,7 @@ export default function UnderDuressSettingsScreen() {
     minTimeInMinutes: 2,
     maxTimeInMinutes: 1440,
     numberOfFakeUsers: 5,
+    selectedBots: [],
   });
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -49,7 +52,10 @@ export default function UnderDuressSettingsScreen() {
       });
       if (response.ok) {
         const data = await response.json();
-        setSettings(data);
+        setSettings({
+          ...data,
+          selectedBots: data.selectedBots || []
+        });
         if (data.underDuressAccount) {
           setUsername(data.underDuressAccount.username);
           setEmail(data.underDuressAccount.email);
@@ -205,6 +211,28 @@ export default function UnderDuressSettingsScreen() {
         When under duress, your chat list will show these fake conversations with randomly generated users. 
         You can still search and message real users, but they won't appear in your chat list.
       </Text>
+
+      <Text h4 style={styles.sectionTitle}>Chat Personas</Text>
+      <Text style={styles.description}>
+        Select up to 5 AI personas to generate fake conversations in duress mode.
+      </Text>
+      {Object.entries(BOT_PROMPTS).map(([botType, prompt]) => (
+        <View key={botType} style={styles.settingRow}>
+          <Text style={{color: colors.text.secondary}}>{botType.replace('_', ' ').toUpperCase()}</Text>
+          <Switch
+            value={settings.selectedBots.includes(botType)}
+            onValueChange={(value) => {
+              const newBots = value 
+                ? [...settings.selectedBots, botType].slice(0, 5)
+                : settings.selectedBots.filter(b => b !== botType);
+              setSettings({ ...settings, selectedBots: newBots });
+            }}
+            disabled={!settings.selectedBots.includes(botType) && settings.selectedBots.length >= 5}
+            color={colors.button.primary}
+          />
+        </View>
+      ))}
+      <Text style={styles.label}>Selected: {settings.selectedBots.length}/5</Text>
 
       <Button
         title="Save Settings"

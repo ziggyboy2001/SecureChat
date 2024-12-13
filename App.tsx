@@ -23,82 +23,34 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
 const UnderDuressButton = () => {
-  const { token } = useAuth();
+  const { user, switchToUnderDuress } = useAuth();
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
+  if (user?.isUnderDuressAccount) {
+    return null;
+  }
 
   const handleUnderDuress = async () => {
     try {
-      console.log('Attempting to switch to duress account...');
-      const response = await fetch(`${API_URL}/auth/switch-to-duress`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
+      await switchToUnderDuress();
+      
+      // Force navigation reset after successful switch
+      navigation.reset({
+        index: 0,
+        routes: [{ 
+          name: 'MainTabs',
+          params: { screen: 'Chats' }
+        }],
       });
-
-      const data = await response.json();
-      console.log('Server response:', { status: response.status, data });
-
-      if (!response.ok) {
-        if (response.status === 500) {
-          Alert.alert(
-            'No Under Duress Account',
-            'Would you like to set up an under duress account now?',
-            [
-              {
-                text: 'Cancel',
-                style: 'cancel'
-              },
-              {
-                text: 'Set Up',
-                onPress: () => navigation.navigate('UnderDuressSettings')
-              }
-            ]
-          );
-          return;
-        }
-        throw new Error(data.message || `Server error: ${response.status}`);
-      }
-
-      // Clear existing auth data
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('user');
-
-      // Get new auth data
-      await AsyncStorage.setItem('token', data.token);
-      await AsyncStorage.setItem('user', JSON.stringify(data.user));
-
-      // Reload the app
-      if (Platform.OS === 'web') {
-        window.location.reload();
-      } else {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'MainTabs' }],
-        });
-      }
     } catch (error) {
-      console.error('Detailed error:', error);
-      if (error instanceof Error) {
-        Alert.alert(
-          'Error',
-          `Failed to switch accounts: ${error.message}`
-        );
-      } else {
-        Alert.alert(
-          'Error',
-          'An unexpected error occurred. Please try again later.'
-        );
-      }
+      console.error('Error:', error);
+      Alert.alert('Error', 'Failed to switch to duress account');
     }
   };
 
   return (
-    <TouchableOpacity onPress={handleUnderDuress}>
-      <Text style={{ color: colors.text.inverse, fontSize: 16 }}>
-        Under Duress
-      </Text>
+    <TouchableOpacity onPress={handleUnderDuress} style={styles.underDuressButton}>
+      <Text style={styles.underDuressText}>Under Duress</Text>
     </TouchableOpacity>
   );
 };
@@ -128,6 +80,16 @@ const MainTabs = () => (
     <Tab.Screen name="Profile" component={ProfileScreen} />
   </Tab.Navigator>
 );
+
+const styles = {
+  underDuressButton: {
+    padding: 8,
+    marginRight: 10,
+  },
+  underDuressText: {
+    color: 'red',
+  },
+};
 
 export default function App() {
   return (

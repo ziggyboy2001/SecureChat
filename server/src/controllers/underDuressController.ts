@@ -6,9 +6,11 @@ import { faker } from '@faker-js/faker';
 import jwt from 'jsonwebtoken';
 import { DeepPartial } from 'typeorm';
 import { generateFakeConversations } from './fakeConversationController';
+import { Message } from '../entities/Message';
 
 const userRepository = AppDataSource.getRepository(User);
 const settingsRepository = AppDataSource.getRepository(UnderDuressSettings);
+const messageRepository = AppDataSource.getRepository(Message);
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 interface AuthRequest extends Request {
@@ -154,41 +156,104 @@ export const switchToUnderDuress = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
+    console.log('Finding settings for user:', userId);
     const settings = await settingsRepository.findOne({
       where: { user: { id: userId } },
       relations: ['user'],
     });
 
-    if (!settings?.underDuressUserId) {
+    console.log('Settings found:', settings);
+
+    if (!settings || !settings.underDuressUserId) {
+      console.log('No settings or underDuressUserId found');
       return res.status(404).json({ message: 'Under duress account not found' });
     }
 
-    const duressUser = await userRepository.findOneBy({ id: settings.underDuressUserId });
+    console.log('Finding duress user:', settings.underDuressUserId);
+    const duressUser = await userRepository.findOne({
+      where: { id: settings.underDuressUserId },
+    });
+
+    console.log('Duress user found:', duressUser);
+
     if (!duressUser) {
       return res.status(404).json({ message: 'Under duress account not found' });
     }
 
-    // Generate fake conversations for the under duress account
-    await generateFakeConversations(duressUser.id);
+    try {
+      console.log('Checking for existing messages...');
+      const existingMessages = await messageRepository.find({
+        where: [
+          { sender: { id: duressUser.id } },
+          { receiver: { id: duressUser.id } }
+        ]
+      });
 
-    // Generate token for under duress account
+      console.log('Existing messages count:', existingMessages.length);
+
+      if (existingMessages.length === 0) {
+        console.log('Generating fake conversations...');
+        await generateFakeConversations(duressUser.id);
+        console.log('Fake conversations generated');
+      }
+    } catch (error) {
+      console.error('Error with messages:', error);
+      throw error;
+    }
+
+    console.log('Updating duress user...');
+    duressUser.isUnderDuressAccount = true;
+    await userRepository.save(duressUser);
+
     const token = jwt.sign(
       { userId: duressUser.id },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    res.json({
+    console.log('Sending response...');
+    return res.json({
       token,
       user: {
         id: duressUser.id,
         username: duressUser.username,
         email: duressUser.email,
         avatar: duressUser.avatar,
-      },
+        isUnderDuressAccount: true
+      }
     });
   } catch (error) {
-    console.error('Error switching to under duress account:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Detailed error in switchToUnderDuress:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    return res.status(500).json({ 
+      message: error instanceof Error ? error.message : 'Server error',
+      details: error instanceof Error ? error.stack : undefined
+    });
+  }
+};
+
+export const checkUnderDuressSettings = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const settings = await settingsRepository.findOne({
+      where: { user: { id: userId } },
+      relations: ['user'],
+    });
+
+    return res.json({
+      hasSettings: !!settings,
+      hasDuressAccount: !!(settings?.underDuressUserId),
+      settings: settings
+    });
+  } catch (error) {
+    console.error('Error checking settings:', error);
+    return res.status(500).json({ message: 'Server error' });
   }
 }; 

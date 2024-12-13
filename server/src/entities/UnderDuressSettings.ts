@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from "typeorm";
 import { User } from "./User";
 
 @Entity()
@@ -10,7 +10,7 @@ export class UnderDuressSettings {
   @JoinColumn()
   user!: User;
 
-  @Column()
+  @Column({ nullable: true })
   underDuressUserId!: string;
 
   @Column({ default: true })
@@ -24,10 +24,4 @@ export class UnderDuressSettings {
 
   @Column({ default: 5 })
   numberOfFakeUsers!: number;
-
-  @CreateDateColumn()
-  createdAt!: Date;
-
-  @UpdateDateColumn()
-  updatedAt!: Date;
 } 

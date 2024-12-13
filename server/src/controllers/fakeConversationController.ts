@@ -4,6 +4,7 @@ import { User } from '../entities/User';
 import { Message } from '../entities/Message';
 import { UnderDuressSettings } from '../entities/UnderDuressSettings';
 import { DeepPartial } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 
 const userRepository = AppDataSource.getRepository(User);
 const messageRepository = AppDataSource.getRepository(Message);
@@ -13,91 +14,99 @@ const generateFakeUser = async (mainUserId: string): Promise<User> => {
   const firstName = faker.person.firstName();
   const lastName = faker.person.lastName();
   
-  const userData: DeepPartial<User> = {
-    username: faker.internet.userName({ firstName, lastName }),
+  const userData = userRepository.create({
+    id: faker.string.uuid(),
+    username: `fake_${faker.internet.userName({ firstName, lastName })}`,
     email: faker.internet.email({ firstName, lastName }),
-    password: faker.internet.password(),
+    password: await bcrypt.hash(faker.internet.password(), 10),
     avatar: faker.image.avatar(),
     status: faker.helpers.arrayElement(['online', 'offline']) as 'online' | 'offline',
     lastSeen: faker.date.recent({ days: 7 }),
     isUnderDuressAccount: false,
-    mainAccountId: mainUserId,
-  };
+    mainAccountId: mainUserId
+  });
 
-  return userRepository.save(userRepository.create(userData));
+  return await userRepository.save(userData);
 };
 
 const generateFakeMessages = async (
-  user1: User,
-  user2: User,
-  minTimeInMinutes: number,
-  maxTimeInMinutes: number,
+  duressUser: User,
+  fakeUser: User,
+  minMinutes: number,
+  maxMinutes: number,
   showTimestamps: boolean
-): Promise<Message[]> => {
-  const messages: DeepPartial<Message>[] = [];
+): Promise<void> => {
   const numberOfMessages = faker.number.int({ min: 5, max: 20 });
-  
-  // Calculate time range for messages
-  const now = new Date();
-  const minTime = new Date(now.getTime() - minTimeInMinutes * 60000);
-  const maxTime = new Date(now.getTime() - maxTimeInMinutes * 60000);
-  
+  const messages = [];
+  let currentDate = new Date();
+
   for (let i = 0; i < numberOfMessages; i++) {
-    const timestamp = showTimestamps
-      ? faker.date.between({ from: maxTime, to: minTime })
-      : undefined;
-    
-    const sender = faker.helpers.arrayElement([user1, user2]);
-    const receiver = sender.id === user1.id ? user2 : user1;
-    
-    messages.push({
-      sender,
-      receiver,
+    const minutesAgo = faker.number.int({ min: minMinutes, max: maxMinutes });
+    currentDate = new Date(currentDate.getTime() - minutesAgo * 60000);
+
+    const message = messageRepository.create({
+      sender: duressUser,
+      receiver: fakeUser,
       content: faker.lorem.sentence(),
       type: 'text',
-      readBy: [sender.id],
+      readBy: [],
       reactions: [],
-      delivered: true,
-      createdAt: timestamp,
-      updatedAt: timestamp,
+      delivered: true
     });
+
+    messages.push(message);
   }
-  
-  return messageRepository.save(messages);
+
+  await messageRepository.save(messages);
+  console.log(`Generated ${messages.length} messages between ${duressUser.id} and ${fakeUser.id}`);
 };
 
 export const generateFakeConversations = async (userId: string): Promise<void> => {
   try {
+    console.log('Generating fake conversations for user:', userId);
+    
     // Get user's under duress settings
     const settings = await settingsRepository.findOne({
-      where: { user: { id: userId } },
+      where: { underDuressUserId: userId },
     });
     
     if (!settings) {
+      console.error('No settings found for duress user:', userId);
       throw new Error('Under duress settings not found');
     }
     
-    // Generate fake users
+    console.log('Found settings:', settings);
+    
+    // Generate fake users with fake_ prefix
     const fakeUsers = await Promise.all(
       Array(settings.numberOfFakeUsers)
         .fill(null)
-        .map(() => generateFakeUser(userId))
+        .map(async () => {
+          const fakeUser = await generateFakeUser(userId);
+          console.log('Generated fake user:', fakeUser.id);
+          return fakeUser;
+        })
     );
     
-    // Generate conversations between the user and each fake user
+    console.log(`Generated ${fakeUsers.length} fake users`);
+    
+    // Generate conversations between the duress user and each fake user
     await Promise.all(
-      fakeUsers.map(fakeUser =>
-        generateFakeMessages(
+      fakeUsers.map(async (fakeUser) => {
+        console.log(`Generating messages between ${userId} and ${fakeUser.id}`);
+        await generateFakeMessages(
           { id: userId } as User,
           fakeUser,
           settings.minTimeInMinutes,
           settings.maxTimeInMinutes,
           settings.showTimestamps
-        )
-      )
+        );
+      })
     );
+    
+    console.log('Finished generating all fake conversations');
   } catch (error) {
-    console.error('Error generating fake conversations:', error);
+    console.error('Error in generateFakeConversations:', error);
     throw error;
   }
 }; 

@@ -108,18 +108,18 @@ export default function ProfileScreen() {
         <Text h4 style={styles.sectionTitle}>
           Settings
         </Text>
-        <ListItem bottomDivider>
-          <ListItem.Content>
-            <ListItem.Title>Notifications</ListItem.Title>
-            <ListItem.Subtitle>Manage notification settings</ListItem.Subtitle>
+        <ListItem bottomDivider containerStyle={{backgroundColor: colors.background.primary}}>
+          <ListItem.Content style={styles.listItemContent}>
+            <ListItem.Title style={styles.listItemTitle}>Notifications</ListItem.Title>
+            <ListItem.Subtitle style={styles.listItemSubtitle}>Manage notification settings</ListItem.Subtitle>
           </ListItem.Content>
           <ListItem.Chevron />
         </ListItem>
 
-        <ListItem bottomDivider>
-          <ListItem.Content>
-            <ListItem.Title>Privacy</ListItem.Title>
-            <ListItem.Subtitle>Control your privacy settings</ListItem.Subtitle>
+        <ListItem bottomDivider containerStyle={{backgroundColor: colors.background.primary}}>
+          <ListItem.Content style={styles.listItemContent}>
+            <ListItem.Title style={styles.listItemTitle}>Privacy</ListItem.Title>
+            <ListItem.Subtitle style={styles.listItemSubtitle}>Control your privacy settings</ListItem.Subtitle>
           </ListItem.Content>
           <ListItem.Chevron />
         </ListItem>
@@ -127,18 +127,19 @@ export default function ProfileScreen() {
         <ListItem 
           bottomDivider
           onPress={() => navigation.navigate('UnderDuressSettings')}
+          containerStyle={{backgroundColor: colors.background.primary}}
         >
-          <ListItem.Content>
-            <ListItem.Title>Under Duress Settings</ListItem.Title>
-            <ListItem.Subtitle>Configure your safety account</ListItem.Subtitle>
+          <ListItem.Content style={styles.listItemContent}>
+            <ListItem.Title style={styles.listItemTitle}>Under Duress Settings</ListItem.Title>
+            <ListItem.Subtitle style={styles.listItemSubtitle}>Configure your safety account</ListItem.Subtitle>
           </ListItem.Content>
           <ListItem.Chevron />
         </ListItem>
 
-        <ListItem bottomDivider>
-          <ListItem.Content>
-            <ListItem.Title>Account</ListItem.Title>
-            <ListItem.Subtitle>Manage your account settings</ListItem.Subtitle>
+        <ListItem bottomDivider containerStyle={{backgroundColor: colors.background.primary}}>
+          <ListItem.Content style={styles.listItemContent}>
+            <ListItem.Title style={styles.listItemTitle}>Account</ListItem.Title>
+            <ListItem.Subtitle style={styles.listItemSubtitle}>Manage your account settings</ListItem.Subtitle>
           </ListItem.Content>
           <ListItem.Chevron />
         </ListItem>
@@ -148,23 +149,23 @@ export default function ProfileScreen() {
         <Text h4 style={styles.sectionTitle}>
           Support
         </Text>
-        <ListItem bottomDivider>
-          <ListItem.Content>
-            <ListItem.Title>Help Center</ListItem.Title>
+        <ListItem bottomDivider containerStyle={{backgroundColor: colors.background.primary}}>
+          <ListItem.Content style={styles.listItemContent}>
+            <ListItem.Title style={styles.listItemTitle}>Help Center</ListItem.Title>
           </ListItem.Content>
           <ListItem.Chevron />
         </ListItem>
 
-        <ListItem bottomDivider>
-          <ListItem.Content>
-            <ListItem.Title>Contact Us</ListItem.Title>
+        <ListItem bottomDivider containerStyle={{backgroundColor: colors.background.primary}}>
+          <ListItem.Content style={styles.listItemContent}>
+            <ListItem.Title style={styles.listItemTitle}>Contact Us</ListItem.Title>
           </ListItem.Content>
           <ListItem.Chevron />
         </ListItem>
 
-        <ListItem bottomDivider>
-          <ListItem.Content>
-            <ListItem.Title>About</ListItem.Title>
+        <ListItem bottomDivider containerStyle={{backgroundColor: colors.background.primary}}>
+          <ListItem.Content style={styles.listItemContent}>
+            <ListItem.Title style={styles.listItemTitle}>About</ListItem.Title>
           </ListItem.Content>
           <ListItem.Chevron />
         </ListItem>
@@ -216,6 +217,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 0,
     backgroundColor: colors.background.primary,
+    color: colors.text.primary
   },
   logoutButton: {
     backgroundColor: colors.button.primary,
