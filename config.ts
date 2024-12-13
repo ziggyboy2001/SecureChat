@@ -5,4 +5,3 @@ export const MESSAGE_TYPES = {
   IMAGE: 'image',
 } as const;
 export const REACTIONS = ['❤️', '👍', '😊', '😂', '😮', '😢'] as const;
-export const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
